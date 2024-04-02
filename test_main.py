@@ -1,4 +1,5 @@
 from importlib import reload
+import subprocess
 import sys
 import unittest
 
@@ -10,7 +11,10 @@ MAX_RETRIES = 5
 retries = 0
 
 
-def autograding_successfully_imported():
+def fetch_autograding() -> None:
+    subprocess.run(["git", "submodule", "update", "--init", "--remote"])
+    
+def autograding_successfully_imported() -> bool:
     """Check if autograding module is successfully imported.
 
     If a submodule is imported (e.g. autograding.case), autograding may be imported
@@ -23,6 +27,9 @@ def autograding_successfully_imported():
         and locals().get("autograding").__file__
     )
 
+# Force refresh of autograding module from upstream
+fetch_autograding()
+
 # autograding submodule might not be successfully fetched on init
 # if unsuccessful, we have to fetch it manually
 while not autograding_successfully_imported():
@@ -31,8 +38,7 @@ while not autograding_successfully_imported():
         reload(autograding)
         from autograding.case import FuncCall, InOut, RecursiveCall
     except (ImportError, ModuleNotFoundError):
-        import subprocess
-        subprocess.run(["git", "submodule", "update", "--init"])
+        fetch_autograding()
         retries += 1
     else:
         break
